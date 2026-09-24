@@ -43,16 +43,18 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
-      - name: Setup Android SDK and NDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install NDK and CMake
+      - name: Setup Android NDK & Accept Licenses
         run: |
-          yes | sdkmanager --install "ndk;26.1.10909125" "cmake;3.22.1"
+          echo "Android SDK root: $ANDROID_HOME"
+          SDKMANAGER=$(which sdkmanager || echo "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager")
+          
+          echo "Accepting licenses..."
+          yes | $SDKMANAGER --licenses || true
 
-      - name: Setup Gradle Cache
-        uses: gradle/actions/setup-gradle@v3
+          echo "Installing NDK 26.1.10909125 and CMake 3.22.1..."
+          $SDKMANAGER --install "ndk;26.1.10909125" "cmake;3.22.1" "platforms;android-36" "build-tools;35.0.0" || true
 
       - name: Decode Signing Keystore (Optional)
         id: keystore
@@ -65,7 +67,7 @@ jobs:
             echo "KEYSTORE_FILE=${{ github.workspace }}/release.keystore" >> $GITHUB_ENV
             echo "has_custom_keystore=true" >> $GITHUB_OUTPUT
           else
-            echo "No custom keystore provided. Using fallback keystore."
+            echo "No custom keystore provided in secrets. Using project fallback keystore."
             echo "has_custom_keystore=false" >> $GITHUB_OUTPUT
           fi
 
@@ -74,7 +76,7 @@ jobs:
 
       - name: Build Debug APK
         if: ${{ github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == 'both' }}
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: Build Release APK
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.build_type == 'release' || github.event.inputs.build_type == 'both' }}
@@ -83,18 +85,17 @@ jobs:
           SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease --stacktrace
 
       - name: Prepare APK Outputs
         run: |
           mkdir -p release-apks
           
-          # Tag or Ref name
           REF_TAG="${{ github.ref_name }}"
           [ -z "$REF_TAG" ] && REF_TAG="latest"
 
           # Collect Release APK
-          find app/build/outputs/apk/ -name "*release*.apk" -o -name "*release-unsigned.apk" | while read -r apk; do
+          find app/build/outputs/apk/ -name "*release*.apk" | while read -r apk; do
             filename=$(basename "$apk")
             echo "Found Release APK: $apk"
             cp "$apk" "release-apks/PocketForge-${REF_TAG}-${filename}"
