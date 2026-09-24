@@ -1,0 +1,31 @@
+Categories:
+  - Development
+  - System
+License: MIT
+AuthorName: PocketForge
+SourceCode: https://github.com/pocketforge/pocketforge
+IssueTracker: https://github.com/pocketforge/pocketforge/issues
+Changelog: https://github.com/pocketforge/pocketforge/releases
+
+AutoName: PocketForge
+
+RepoType: git
+Repo: https://github.com/pocketforge/pocketforge.git
+
+AntiFeatures:
+  - NonFreeNet
+
+Builds:
+  - versionName: 1.1.1
+    versionCode: 6
+    commit: v1.1.1
+    subdir: app
+    ndk: r26b
+    submodules: true
+    gradle:
+      - yes
+
+AutoUpdateMode: Version v%v
+UpdateCheckMode: Tags
+CurrentVersion: 1.1.1
+CurrentVersionCode: 6
