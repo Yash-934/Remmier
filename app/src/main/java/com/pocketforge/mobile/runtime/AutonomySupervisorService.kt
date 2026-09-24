@@ -146,7 +146,7 @@ class AutonomySupervisorService : Service() {
             chmod -R u+rwX /pocket-autonomy /workspace/pocketforge-autonomy || true
             if id -u pocketforge >/dev/null 2>&1; then chown -R pocketforge:pocketforge /pocket-autonomy || true; fi
         """.trimIndent()
-        runGuest(command, "bootstrap-user.log").requireSuccess("Could not prepare autonomy directories")
+        runGuest(listOf("/usr/bin/env", "bash", "-lc", command), "bootstrap-user.log").requireSuccess("Could not prepare autonomy directories")
     }
 
     private fun ensureInstructions() {
@@ -521,18 +521,6 @@ You are the local Tester employee.
 
     private fun shellQuote(value: String): String = "'${value.replace("'", "'\\''")}'"
 
-    private fun tail(file: File): String {
-        if (!file.isFile) return ""
-        return runCatching {
-            RandomAccessFile(file, "r").use { raf ->
-                val length = raf.length()
-                val start = (length - 12_000).coerceAtLeast(0)
-                raf.seek(start)
-                raf.readBytes().toString(Charsets.UTF_8)
-            }
-        }.getOrDefault("")
-    }
-
     private fun update(
         state: AutonomyServiceState? = null,
         progress: Float? = null,
@@ -635,5 +623,19 @@ You are the local Tester employee.
 
         fun start(context: Context) = androidx.core.content.ContextCompat.startForegroundService(context, Intent(context, AutonomySupervisorService::class.java).setAction(ACTION_START))
         fun stop(context: Context) = context.startService(Intent(context, AutonomySupervisorService::class.java).setAction(ACTION_STOP))
+
+        private fun tail(file: File): String {
+            if (!file.isFile) return ""
+            return runCatching {
+                RandomAccessFile(file, "r").use { raf ->
+                    val length = raf.length()
+                    val start = (length - 12_000).coerceAtLeast(0)
+                    raf.seek(start)
+                    val bytes = ByteArray((length - start).toInt())
+                    raf.readFully(bytes)
+                    String(bytes, Charsets.UTF_8)
+                }
+            }.getOrDefault("")
+        }
     }
 }

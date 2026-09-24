@@ -34,6 +34,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -63,6 +64,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pocketforge.mobile.model.AutonomyServiceState
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AutonomyScreen(viewModel: AutonomyViewModel) {
     val snapshot by viewModel.snapshot.collectAsStateWithLifecycle()
@@ -267,6 +269,7 @@ private fun EmployeeRow(name: String, role: String, id: String?) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun LocalDashboardScreen(url: String, title: String, onBack: () -> Unit) {
