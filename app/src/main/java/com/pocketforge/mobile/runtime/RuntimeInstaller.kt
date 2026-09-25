@@ -428,11 +428,14 @@ class RuntimeInstaller(private val context: Context) {
         TarArchiveInputStream(GzipCompressorInputStream(BufferedInputStream(downloaded.inputStream()))).use { archive ->
             var entry = archive.nextEntry
             while (entry != null) {
-                if (entry.isFile && entry.name.removePrefix("./") == "antigravity") {
+                if (entry.isFile && (entry.name.removePrefix("./") == "antigravity" || entry.name.endsWith("/antigravity"))) {
+                    destination.parentFile?.mkdirs()
                     val staged = File(destination.parentFile, ".agy-$latest.installing")
                     FileOutputStream(staged).use { archive.copyTo(it) }
                     Os.chmod(staged.absolutePath, 0b111101101)
+                    staged.setExecutable(true, false)
                     Os.rename(staged.absolutePath, destination.absolutePath)
+                    destination.setExecutable(true, false)
                     found = true
                     break
                 }

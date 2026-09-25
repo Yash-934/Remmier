@@ -136,15 +136,14 @@ class AutonomySupervisorService : Service() {
     }
 
     private suspend fun ensureDirsAndUser() = withContext(Dispatchers.IO) {
-        store.root.mkdirs(); store.logs.mkdirs(); store.paperclipHome.mkdirs(); store.openClawState.mkdirs(); store.workspace.mkdirs()
+        store.root.mkdirs()
+        store.logs.mkdirs()
+        store.paperclipHome.mkdirs()
+        store.openClawState.mkdirs()
+        store.workspace.mkdirs()
         val command = """
-            set -e
-            if ! id -u pocketforge >/dev/null 2>&1 && command -v useradd >/dev/null 2>&1; then
-              useradd --create-home --shell /bin/bash pocketforge || true
-            fi
             mkdir -p /pocket-autonomy/paperclip /pocket-autonomy/openclaw /workspace/pocketforge-autonomy
-            chmod -R u+rwX /pocket-autonomy /workspace/pocketforge-autonomy || true
-            if id -u pocketforge >/dev/null 2>&1; then chown -R pocketforge:pocketforge /pocket-autonomy || true; fi
+            chmod -R 777 /pocket-autonomy /workspace/pocketforge-autonomy 2>/dev/null || true
         """.trimIndent()
         runGuest(listOf("/usr/bin/env", "bash", "-lc", command), "bootstrap-user.log").requireSuccess("Could not prepare autonomy directories")
     }
@@ -561,7 +560,7 @@ You are the local Tester employee.
 
     private fun notification(detail: String, ongoing: Boolean) = NotificationCompat.Builder(this, CHANNEL_ID)
         .setSmallIcon(R.drawable.ic_notification)
-        .setContentTitle("PocketForge Local Autonomy")
+        .setContentTitle("Remmier Local Autonomy")
         .setContentText(detail)
         .setContentIntent(PendingIntent.getActivity(this, 71, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
         .setOnlyAlertOnce(true)
@@ -611,13 +610,13 @@ You are the local Tester employee.
     override fun onBind(intent: Intent?): IBinder? = null
 
     companion object {
-        const val ACTION_START = "com.pocketforge.mobile.AUTONOMY_START"
-        const val ACTION_STOP = "com.pocketforge.mobile.AUTONOMY_STOP"
+        const val ACTION_START = "com.remmier.me.AUTONOMY_START"
+        const val ACTION_STOP = "com.remmier.me.AUTONOMY_STOP"
         const val PAPERCLIP_PORT = 3100
         const val OPENCLAW_PORT = 18789
         const val PAPERCLIP_VERSION = "v2026.831.1"
         const val OPENCLAW_VERSION = "2026.9.6"
-        private const val COMPANY_NAME = "PocketForge Local"
+        private const val COMPANY_NAME = "Remmier Local"
         private const val CHANNEL_ID = "local-autonomy"
         private const val NOTIFICATION_ID = 71
 

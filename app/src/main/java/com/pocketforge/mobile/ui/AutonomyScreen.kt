@@ -172,8 +172,8 @@ fun AutonomyScreen(viewModel: AutonomyViewModel) {
                     Text("Trading/data process → localhost bridge → Paperclip Coder → Tester → optional review", fontSize = 13.sp)
                     Spacer(Modifier.height(8.dp))
                     Text("Bridge: ${snapshot.bridgeUrl}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Workspace: /workspace/pocketforge-autonomy", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Paperclip and OpenClaw stay supervised by PocketForge and bind only to loopback.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Workspace: /workspace/remmier-autonomy", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Paperclip and OpenClaw stay supervised by Remmier and bind only to loopback.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -215,7 +215,7 @@ private fun StatusHeader(snapshot: com.pocketforge.mobile.model.AutonomySnapshot
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("PocketForge Autonomy", fontWeight = FontWeight.Bold)
+                Text("Remmier Autonomy", fontWeight = FontWeight.Bold)
                 Text(snapshot.message, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             AssistChip(onClick = {}, label = { Text(label, fontSize = 10.sp) }, leadingIcon = { Icon(icon, null, Modifier.size(14.dp)) })
