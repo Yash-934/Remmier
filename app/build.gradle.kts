@@ -78,7 +78,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.pocketforge.mobile"
+        applicationId = "com.remmier.me"
         minSdk = 28
         targetSdk = if (playBuild) 36 else 28
         versionCode = 6

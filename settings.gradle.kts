@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "PocketForge"
+rootProject.name = "Remmier"
 include(":app")
