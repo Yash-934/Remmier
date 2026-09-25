@@ -48,27 +48,38 @@ jobs:
       - name: Setup Android NDK & Accept Licenses
         run: |
           echo "Android SDK root: $ANDROID_HOME"
-          SDKMANAGER=$(which sdkmanager || echo "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager")
-          
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER=$(which sdkmanager || echo "")
+          fi
+
           echo "Accepting licenses..."
           yes | $SDKMANAGER --licenses || true
 
-          echo "Installing NDK 26.1.10909125 and CMake 3.22.1..."
+          echo "Installing NDK and CMake..."
           $SDKMANAGER --install "ndk;26.1.10909125" "cmake;3.22.1" "platforms;android-36" "build-tools;35.0.0" || true
 
-      - name: Decode Signing Keystore (Optional)
-        id: keystore
+      - name: Restore Keystore for Signing
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
+          # 1. Check if user provided custom release keystore secret
           if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "Decoding Keystore from GitHub Secrets..."
+            echo "Decoding custom production keystore from GitHub Secrets..."
             echo "$KEYSTORE_BASE64" | base64 --decode > "${{ github.workspace }}/release.keystore"
             echo "KEYSTORE_FILE=${{ github.workspace }}/release.keystore" >> $GITHUB_ENV
-            echo "has_custom_keystore=true" >> $GITHUB_OUTPUT
-          else
-            echo "No custom keystore provided in secrets. Using project fallback keystore."
-            echo "has_custom_keystore=false" >> $GITHUB_OUTPUT
+          fi
+
+          # 2. Always restore debug.keystore from debug.keystore.base64 if present
+          if [ -f debug.keystore.base64 ] && [ ! -f debug.keystore ]; then
+            echo "Restoring debug.keystore from debug.keystore.base64..."
+            base64 --decode debug.keystore.base64 > debug.keystore || base64 -d debug.keystore.base64 > debug.keystore
+          fi
+
+          # 3. Fallback: generate a debug keystore if neither exists
+          if [ ! -f debug.keystore ] && [ ! -f release.keystore ]; then
+            echo "Generating fallback keystore..."
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
 
       - name: Make Gradle executable
@@ -76,16 +87,15 @@ jobs:
 
       - name: Build Debug APK
         if: ${{ github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == 'both' }}
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --stacktrace --info
 
       - name: Build Release APK
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.build_type == 'release' || github.event.inputs.build_type == 'both' }}
         env:
-          SIGNING_KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
           SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew assembleRelease --stacktrace --info
 
       - name: Prepare APK Outputs
         run: |
@@ -102,7 +112,7 @@ jobs:
           done
 
           # Collect Debug APK
-          find app/build/outputs/apk/ -name "*debug.apk" | while read -r apk; do
+          find app/build/outputs/apk/ -name "*debug*.apk" | while read -r apk; do
             filename=$(basename "$apk")
             echo "Found Debug APK: $apk"
             cp "$apk" "release-apks/PocketForge-${REF_TAG}-${filename}"

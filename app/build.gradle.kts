@@ -1,3 +1,4 @@
+import java.util.Base64
 import java.util.Properties
 
 plugins {
@@ -28,18 +29,28 @@ android {
     compileSdk = 36
     ndkVersion = providers.gradleProperty("mhNdkVersion").orNull ?: "26.1.10909125"
 
+    val debugKeystore = file("${rootDir}/debug.keystore")
+    val debugKeystoreBase64 = file("${rootDir}/debug.keystore.base64")
+    if (!debugKeystore.exists() && debugKeystoreBase64.exists()) {
+        try {
+            val bytes = Base64.getDecoder().decode(debugKeystoreBase64.readText().trim())
+            debugKeystore.writeBytes(bytes)
+        } catch (_: Exception) {}
+    }
+
     signingConfigs {
         create("debugConfig") {
-            storeFile = file("${rootDir}/debug.keystore")
+            storeFile = debugKeystore
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
         create("releaseConfig") {
-            val storeFilePath = System.getenv("MH_UPLOAD_STORE_FILE")
+            val rawStoreFilePath = System.getenv("MH_UPLOAD_STORE_FILE")
                 ?: System.getenv("SIGNING_KEYSTORE_FILE")
                 ?: System.getenv("KEYSTORE_FILE")
                 ?: providers.gradleProperty("signingStoreFile").orNull
+            val storeFilePath = rawStoreFilePath?.takeIf { it.isNotBlank() }
 
             if (storeFilePath != null && file(storeFilePath).exists()) {
                 storeFile = file(storeFilePath)
@@ -57,8 +68,8 @@ android {
                 storePassword = System.getenv("MH_UPLOAD_STORE_PASSWORD") ?: "pocketforge"
                 keyAlias = System.getenv("MH_UPLOAD_KEY_ALIAS") ?: "release"
                 keyPassword = System.getenv("MH_UPLOAD_KEY_PASSWORD") ?: "pocketforge"
-            } else {
-                storeFile = file("${rootDir}/debug.keystore")
+            } else if (debugKeystore.exists()) {
+                storeFile = debugKeystore
                 storePassword = "android"
                 keyAlias = "androiddebugkey"
                 keyPassword = "android"
